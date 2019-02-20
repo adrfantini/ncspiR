@@ -16,8 +16,7 @@ required_pkgs = c(
     'magrittr',
     'futile.logger',
     'lubridate',
-    'RNetCDF',
-    'ncdf.tools'
+    'raster'
 )
 
 #============= INITIALIZATION =============
@@ -239,7 +238,7 @@ spi_res <- st_apply(nc_in,
     calc_SPI, CLUSTER = cluster, PROGRESS = TRUE,
     ts = ts, thr = na_thr, ref.s = ref_start, ref.e = ref_end, first_ym = start_ym, last_ym = end_ym
 )
-stopCluster(cluster)
+if (nthreads > 1 ) stopCluster(cluster)
 names(spi_res) = var_out
 flog.info("Ended computation")
 
