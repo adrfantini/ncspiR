@@ -248,10 +248,19 @@ if (debug) {
 }
 spi_res[abs(spi_res) > spi_na_thr] = NA
 
+# For some reason it is necessary to permutate the output. Further checks are necessary to verify this is the correct permutation # TODO
+shift_vec = function(v) {
+    len = length(v)
+    return(c(v[2:len], v[1]))
+}
+spi_res = aperm(spi_res, shift_vec(1:length(dim(spi_res))))
+
 #============= WRITE OUTPUT =============
 
+# Better output writing # TODO
+
 flog.info('Writing to file %s', fn_out)
-spell_res %>%
+spi_res %>%
     as('Raster') %>%
     setZ(times) %>%
     writeRaster(fn_out, varname = var_out, varunit = '1', longname = 'SPI index', zname = 'time')
