@@ -15,7 +15,9 @@ required_pkgs = c(
     'SPEI',
     'magrittr',
     'futile.logger',
-    'lubridate'
+    'lubridate',
+    'RNetCDF',
+    'ncdf.tools'
 )
 
 #============= INITIALIZATION =============
@@ -237,4 +239,26 @@ spi_res <- st_apply(nc_in,
     calc_SPI, CLUSTER = cluster, PROGRESS = TRUE,
     ts = ts, thr = na_thr, ref.s = ref_start, ref.e = ref_end, first_ym = start_ym, last_ym = end_ym
 )
+stopCluster(cluster)
+names(spi_res) = var_out
 flog.info("Ended computation")
+
+if (debug) {
+    n_over_thr = sum(abs(spi_res[[var_out]]) > spi_na_thr, na.rm=TRUE)
+    flog.debug('Setting %d values above the SPI threshold (%g) to NA', n_over_thr, spi_na_thr)
+}
+spi_res[abs(spi_res) > spi_na_thr] = NA
+
+#============= WRITE OUTPUT =============
+
+flog.info('Writing to file %s', fn_out)
+spell_res %>%
+    as('Raster') %>%
+    setZ(times) %>%
+    writeRaster(fn_out, varname = var_out, varunit = '1', longname = 'SPI index', zname = 'time')
+
+flog.info('All done')
+
+# rnc_in = open.nc(fn_in)
+# rnc_out = create.nc(fn_out)
+# modifyNcdfCopyMetadata(rnc_in, rnc_out)
