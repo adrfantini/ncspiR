@@ -45,7 +45,7 @@ suppressPackageStartupMessages(p_load(optparse))
 suppressPackageStartupMessages(p_load(glue))
 suppressPackageStartupMessages(p_load(futile.logger))
 flog.fatal = function(...) {futile.logger::flog.fatal(...); fatalerror()}
-options(error = function() { flog.fatal(geterrmessage()) ; quit(runLast=FALSE)}) # Override R's default error handling
+# options(error = function() { flog.fatal(geterrmessage()) ; quit(runLast=FALSE)}) # Override R's default error handling
 
 option_list = list(make_option(c("-t", "--timescale"),
                                 type="integer",
