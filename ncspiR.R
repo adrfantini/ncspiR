@@ -104,7 +104,7 @@ parser = OptionParser(
     {further_description}
 
     REQUIRED PACKAGES: {paste(required_pkgs, collapse=', ')}
-    MISSING: {missing}
+    MISSING  PACKAGES: {missing}
 
     Note that {program_name} will *attempt* to install any missing packages by itself.
 
@@ -296,6 +296,7 @@ if (!is.null(ref_end)) {
     if (ref_end_invalid) flog.fatal('--refend (%s) successive to the last timestep in the file (%s)', paste(ref_end, collapse='-'), paste(nc_end, collapse='-'))
 }
 
+# Function to get dimensions for a given variable
 ncdim_get = function(nc, varid) {
     nc$var[[varid]]$dim %>% sapply(`[[`, 'name')
 }
@@ -389,7 +390,7 @@ flog.info('Initialising output file')
 nc_var_out = ncvar_def(
     var_out, '1', nc_in$dim[nc_var_in_dims],
     longname='SPI index',
-    shuffle = compress,
+#     shuffle = compress,
     compression = ifelse(compress, deflate_level, NA)
 )
 nc_out = fn_out %>% nc_create(c(list(nc_var_out), nc_in$var[vars2copy]), force_v4 = TRUE)
