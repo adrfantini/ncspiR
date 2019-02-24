@@ -358,7 +358,7 @@ if (debug) {
 }
 spi_out[abs(spi_out) > spi_max_thr] = NA
 
-# For some reason it is necessary to permutate the output. Further checks are necessary to verify this is the correct permutation # TODO
+# Repermutate the output which has been swapped by apply
 shift_vec = function(v) {
     len = length(v)
     return(c(v[2:len], v[1]))
