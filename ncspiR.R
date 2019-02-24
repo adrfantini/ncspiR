@@ -230,6 +230,7 @@ time_var = 'time'
 times = nc_in %>% ncvar_get(time_var)
 time_units = nc_in %>% ncatt_get(time_var, 'units')
 if (!time_units$hasatt) flog.fatal('Cannot find time units!')
+flog.debug('Time units: %s', time_units$value)
 time_units = strsplit(time_units$value, " ")[[1]]
 time_cal = nc_in %>% ncatt_get(time_var, 'calendar')
 if (!time_cal$hasatt) {
@@ -265,7 +266,7 @@ if (time_cal %in% pcict_calendars) {
         years=years,     year=years,     yr=years,
         NA
     )
-    times = as.PCICt(time_start, cal=time_cal) + as.numeric(time_f(times))
+    times = as.PCICt(time_start, cal=time_cal) + as.numeric(time_f(floor(times))) # TODO this floor here is a hack, to work around files which have non-integer times. Works in most cases.
 } else {
     flog.fatal('This program does not support calendar ""%s"', time_cal)
 }
