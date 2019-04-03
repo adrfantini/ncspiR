@@ -85,6 +85,9 @@ option_list = list(make_option(c("-t", "--timescale"),
                     make_option("--progress",
                                 action="store_true",
                                 help="Show a progress bar - this slightly decreases performance"),
+                    make_option("--assume_monthly",
+                                action="store_true",
+                                help="Assume the input file has the correct monthly periodicity, and only use the time of the first timestep to define times"),
                     make_option("--compress",
                                 action="store_true",
                                 help="Activate netCDF compression (with deflate level 1) for the SPI variable"),
@@ -145,6 +148,11 @@ if (progress) {
     flog.debug('Progress bar will be shown')
 } else {
     flog.debug('Progress bar will not be shown')
+}
+
+assume_mon = isTRUE(opt$assume_monthly)
+if (assume_mon) {
+    flog.debug('Assuming the input file has the correct monthly periodicity, and only using the time of the first timestep to define times')
 }
 
 compress = isTRUE(opt$compress)
@@ -285,7 +293,14 @@ times = as.Date(times)
 
 # Check times
 expected_times = times[1] + months(1:length(times)-1)
-if ( !isTRUE(all( times == expected_times) ) ) flog.fatal('Incorrect monthly periodicity in the input file. Missing any timesteps?')
+if ( !isTRUE(all( times == expected_times) ) ) {
+    if (assume_mon) {
+        flog.warn('Incorrect monthly periodicity in the input file. Ignoring, since --assume_monthly was set')
+        times = expected_times
+    } else {
+        flog.fatal('Incorrect monthly periodicity in the input file. Missing any timesteps? You can ignore this error by setting the option --assume_monthly')
+    }
+}
 
 # Check reference times are acceptable
 nc_start = c(year(times[1]), month(times[1]))
