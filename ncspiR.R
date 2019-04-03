@@ -4,7 +4,7 @@ program_name = 'ncspiR.R'
 description = 'Script to calculate the SPI index from a monthly netCDF file containing precipitation data.'
 further_description = 'Input file MUST be monthly. Does everything in memory, so make sure your dataset fits in memory!\n Very few checks are performed, so also make sure you know what you are doing.\n Input files must follow the CF Conventions >= 1.5 (http://cfconventions.org/).\n This program is parallel by default, but is not capable of crossing node boundaries (cannot currently run on multiple nodes).'
 author = 'Adriano Fantini'
-version = '0.2.0'
+version = '0.2.1'
 contact = 'afantini@ictp.it'
 gh_url = 'https://github.com/adrfantini/ncspiR'
 required_pkgs = c(
@@ -298,7 +298,7 @@ if ( !isTRUE(all( times == expected_times) ) ) {
         flog.warn('Incorrect monthly periodicity in the input file. Ignoring, since --assume_monthly was set')
         times = expected_times
     } else {
-        flog.fatal('Incorrect monthly periodicity in the input file. Missing any timesteps? You can ignore this error by setting the option --assume_monthly')
+        flog.fatal('Incorrect monthly periodicity in the input file. Missing any timesteps? You can ignore this error by setting the flag --assume_monthly')
     }
 }
 
