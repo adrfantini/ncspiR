@@ -281,7 +281,18 @@ if (time_cal %in% pcict_calendars) {
         years=years,     year=years,     yr=years,
         NA
     )
-    times = as.PCICt(time_start, cal=time_cal) + as.numeric(time_f(floor(times))) # TODO this floor here is a hack, to work around files which have non-integer times. Works in most cases.
+    if ( grepl("month", tolower(time_offset_unit)) && ( time_cal %in% c('365', '365_day', 'noleap', '360', '360_day') ) ) {
+        second_offsets = switch(time_cal,
+            '365' = (365/12) * 24 * 3600,
+            '365_day' = (365/12) * 24 * 3600,
+            'noleap' = (365/12) * 24 * 3600,
+            '360' = 30 * 24 * 3600,
+            '360_day' = 30 * 24 * 3600
+        ) * floor(times)
+    } else {
+        second_offsets = as.numeric(time_f(floor(times))) # TODO this floor here is a hack, to work around files which have non-integer times. Works in most cases.
+    }
+    times = as.PCICt(time_start, cal=time_cal) + second_offsets
 } else {
     flog.fatal('This program does not support calendar ""%s"', time_cal)
 }
