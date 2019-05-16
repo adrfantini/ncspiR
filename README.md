@@ -18,6 +18,8 @@ INFO [2019-05-16 10:45:04]  ### Goodbye! ###
 ```
 The output should be identical to [this file](output/example_output_std_short_small.nc).
 
+Depending on the files you want to process and on your particular system, running with less cores than the default (all cores available) or even in serial (`--n 1` option) might speed up computation.
+
 Many options are available, use `--help` to list them:
 ```
 > ./ncspiR.R --help
