@@ -1,8 +1,8 @@
 # ncspiR
 
-An R script to compute the SPI index on netCDF files
+An R script to compute the SPI index on netCDF files.
 
-Example usage from a Linux terminal, using the example [input file](input/example_input_std_short_small.nc) included in this repo:
+Example usage from a Unix terminal, using the example [input file](input/example_input_std_short_small.nc) included in this repo:
 ```
 > ./ncspiR.R --progress input/example_input_std_short_small.nc output/example_output_std_short_small.nc
 INFO [2019-05-16 10:43:10]  ### Starting ncspiR.R version 0.2.1 from Adriano Fantini (afantini@ictp.it) ###
