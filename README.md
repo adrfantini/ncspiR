@@ -22,13 +22,12 @@ Depending on the files you want to process and on your particular system, runnin
 
 Many options are available, use `--help` to list them:
 ```
-> ./ncspiR.R --help
 Usage: ./ncspiR.R [options] INPUT OUTPUT
 
 
 Options:
         -t TIMESCALE, --timescale=TIMESCALE
-                SPI timescale in months [default: 12]
+                SPI/SPEI timescale in months [default: 12]
 
         -n NTHREADS, --nthreads=NTHREADS
                 Number of threads to be used. Set to NA for automatic detection (all available threads in the node will be used) [default: NA]
@@ -37,19 +36,19 @@ Options:
                 Variable name to use from input file [default: pr]
 
         -o VAROUT, --varout=VAROUT
-                Variable name to use in output file [default: SPI]
+                Variable name to use in output file [default: SPI or SPEI]
 
         --nafraction=NAFRACTION
                 Max fraction of accepted NAs in a timeseries (0.05 = 5%). If more than this, that cell point becomes NA. [default: 0.05]
 
         --maxspi=MAXSPI
-                SPI output values greater than this (in absolute value) will become NA. [default: 1e+10]
+                SPI/SPEI output values greater than this (in absolute value) will become NA. [default: 1e+10]
 
         --refstart=REFSTART
-                ref.start parameter to pass to SPEI::spi, a character in the YEAR-MON format (e.g. 1976-01). [default: NULL]
+                ref.start parameter to pass to SPEI::spi or SPEI::spei, a character in the YEAR-MON format (e.g. 1976-01). [default: NULL]
 
         --refend=REFEND
-                ref.end parameter to pass to SPEI::spi, a character in the YEAR-MON format (e.g. 2005-12). [default: NULL]
+                ref.end parameter to pass to SPEI::spi or SPEI::spei, a character in the YEAR-MON format (e.g. 2005-12). [default: NULL]
 
         -l LOGFILE, --logfile=LOGFILE
                 Optional file to write logs to. [default: NULL]
@@ -64,7 +63,7 @@ Options:
                 Assume the input file has the correct monthly periodicity, and only use the time of the first timestep to define times
 
         --compress
-                Activate netCDF compression (with deflate level 1) for the SPI variable
+                Activate netCDF compression (with deflate level 1) for the SPI/SPEI variable
 
         --debug
                 Print additional debug output. This flag is also useful if you want to check that the options were correctly understood
@@ -79,7 +78,7 @@ Options:
 #================= DESCRIPTION =================#
 ncspiR.R version 0.3.0 from Adriano Fantini (afantini@ictp.it)
 
-Script to calculate the SPI index from a monthly netCDF file containing precipitation data.
+Script to calculate the SPI (SPEI) index from a monthly netCDF file containing precipitation (water balance) data.
 Input file MUST be monthly. Does everything in memory, so make sure your dataset fits in memory!
  Very few checks are performed, so also make sure you know what you are doing.
  Input files must follow the CF Conventions >= 1.5 (http://cfconventions.org/).
