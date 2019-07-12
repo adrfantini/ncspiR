@@ -1,11 +1,11 @@
 # ncspiR
 
-An R script to compute the SPI index on netCDF files.
+An R script to compute the SPI or SPEI indexes on netCDF files.
 
 Example usage from a Unix terminal, using the example [input file](input/example_input_std_short_small.nc) included in this repo:
 ```
 > ./ncspiR.R --progress input/example_input_std_short_small.nc output/example_output_std_short_small.nc
-INFO [2019-05-16 10:43:10]  ### Starting ncspiR.R version 0.2.1 from Adriano Fantini (afantini@ictp.it) ###
+INFO [2019-05-16 10:43:10]  ### Starting ncspiR.R version 0.3.0 from Adriano Fantini (afantini@ictp.it) ###
 INFO [2019-05-16 10:43:10] Loading packages
 INFO [2019-05-16 10:43:10] Reading metadata
 INFO [2019-05-16 10:43:11] Reading data
@@ -54,6 +54,9 @@ Options:
         -l LOGFILE, --logfile=LOGFILE
                 Optional file to write logs to. [default: NULL]
 
+        --spei
+                Calculate SPEI instead of SPI. WARNING: assumes water balance (precipitation - potential evapotranspiration) as input
+
         --progress
                 Show a progress bar - this slightly decreases performance
 
@@ -74,7 +77,7 @@ Options:
 
 
 #================= DESCRIPTION =================#
-ncspiR.R version 0.2.1 from Adriano Fantini (afantini@ictp.it)
+ncspiR.R version 0.3.0 from Adriano Fantini (afantini@ictp.it)
 
 Script to calculate the SPI index from a monthly netCDF file containing precipitation data.
 Input file MUST be monthly. Does everything in memory, so make sure your dataset fits in memory!

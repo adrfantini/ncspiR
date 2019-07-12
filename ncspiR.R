@@ -1,10 +1,10 @@
 #!/usr/bin/env Rscript
 
 program_name = 'ncspiR.R'
-description = 'Script to calculate the SPI index from a monthly netCDF file containing precipitation data.'
+description = 'Script to calculate the SPI (SPEI) index from a monthly netCDF file containing precipitation (water balance) data.'
 further_description = 'Input file MUST be monthly. Does everything in memory, so make sure your dataset fits in memory!\n Very few checks are performed, so also make sure you know what you are doing.\n Input files must follow the CF Conventions >= 1.5 (http://cfconventions.org/).\n This program is parallel by default, but is not capable of crossing node boundaries (cannot currently run on multiple nodes).'
 author = 'Adriano Fantini'
-version = '0.2.1'
+version = '0.3.0'
 contact = 'afantini@ictp.it'
 gh_url = 'https://github.com/adrfantini/ncspiR'
 required_pkgs = c(
@@ -49,7 +49,7 @@ flog.fatal = function(...) {futile.logger::flog.fatal(...); fatalerror()}
 option_list = list(make_option(c("-t", "--timescale"),
                                 type="integer",
                                 default=12,
-                                help="SPI timescale in months [default: %default]"),
+                                help="SPI/SPEI timescale in months [default: %default]"),
                     make_option(c("-n", "--nthreads"),
                                 type="integer",
                                 default=NA,
@@ -61,7 +61,7 @@ option_list = list(make_option(c("-t", "--timescale"),
                     make_option(c("-o", "--varout"),
                                 type="character",
                                 default='SPI',
-                                help="Variable name to use in output file [default: %default]"),
+                                help="Variable name to use in output file [default: SPI or SPEI]"),
                     make_option("--nafraction",
                                 type="double",
                                 default=5/100,
@@ -69,19 +69,22 @@ option_list = list(make_option(c("-t", "--timescale"),
                     make_option("--maxspi",
                                 type="double",
                                 default=1e10,
-                                help="SPI output values greater than this (in absolute value) will become NA. [default: %default]"),
+                                help="SPI/SPEI output values greater than this (in absolute value) will become NA. [default: %default]"),
                     make_option("--refstart",
                                 type="character",
                                 default=NULL,
-                                help="ref.start parameter to pass to SPEI::spi, a character in the YEAR-MON format (e.g. 1976-01). [default: %default]"),
+                                help="ref.start parameter to pass to SPEI::spi or SPEI::spei, a character in the YEAR-MON format (e.g. 1976-01). [default: %default]"),
                     make_option("--refend",
                                 type="character",
                                 default=NULL,
-                                help="ref.end parameter to pass to SPEI::spi, a character in the YEAR-MON format (e.g. 2005-12). [default: %default]"),
+                                help="ref.end parameter to pass to SPEI::spi or SPEI::spei, a character in the YEAR-MON format (e.g. 2005-12). [default: %default]"),
                     make_option(c('-l', "--logfile"),
                                 type="character",
                                 default=NULL,
                                 help="Optional file to write logs to. [default: %default]"),
+                    make_option("--spei",
+                                action="store_true",
+                                help="Calculate SPEI instead of SPI. WARNING: assumes water balance (precipitation - potential evapotranspiration) as input"),
                     make_option("--progress",
                                 action="store_true",
                                 help="Show a progress bar - this slightly decreases performance"),
@@ -90,7 +93,7 @@ option_list = list(make_option(c("-t", "--timescale"),
                                 help="Assume the input file has the correct monthly periodicity, and only use the time of the first timestep to define times"),
                     make_option("--compress",
                                 action="store_true",
-                                help="Activate netCDF compression (with deflate level 1) for the SPI variable"),
+                                help="Activate netCDF compression (with deflate level 1) for the SPI/SPEI variable"),
                     make_option("--debug",
                                 action="store_true",
                                 help="Print additional debug output. This flag is also useful if you want to check that the options were correctly understood"),
@@ -143,6 +146,15 @@ dryrun = isTRUE(opt$dryrun)
 
 flog.info(glue(' ### Starting {program_name} version {version} from {author} ({contact}) ### '))
 
+wantspei = isTRUE(opt$spei)
+if (wantspei) {
+    flog.info('Will calculate the SPEI index via SPEI::spei. This assumes water balance (precipitation - potential evapotranspiration) as input')
+    index_name = 'SPEI'
+} else {
+    flog.info('Will calculate the SPI index via SPEI::spi. This assumes precipitation as input')
+    index_name = 'SPI'
+}
+
 progress = isTRUE(opt$progress)
 if (progress) {
     flog.debug('Progress bar will be shown')
@@ -179,6 +191,7 @@ if (file.access(dirname(fn_out), mode=2) == -1) flog.fatal('Output file cannot b
 var_in = opt$varin
 flog.debug("Input variable name: %s", var_in)
 var_out = opt$varout
+if (var_out == 'SPI' & wantspei) var_out = 'SPEI'
 flog.debug("Output variable name: %s", var_out)
 
 nthreads = opt$nthreads
@@ -197,8 +210,8 @@ if (na_thr >= 1) {
 flog.debug("NA threshold: %g (%g%%)", na_thr, na_thr*100)
 
 spi_max_thr = opt$maxspi
-if (!is.numeric(spi_max_thr)) flog.fatal('SPI max threshold must be integer, got "%s".', spi_max_thr)
-flog.debug("SPI max threshold: %g", spi_max_thr)
+if (!is.numeric(spi_max_thr)) flog.fatal('SPI/SPEI max threshold must be integer, got "%s".', spi_max_thr)
+flog.debug("SPI/SPEI max threshold: %g", spi_max_thr)
 
 ref_start = opt$refstart
 ref_end = opt$refend
@@ -350,7 +363,7 @@ if (dryrun) {
     quit()
 }
 
-calc_SPI = function(d, ts, thr, ref.s=NULL, ref.e=NULL, first_ym, last_ym) {
+calc_SPI = function(d, ts, thr, ref.s=NULL, ref.e=NULL, first_ym, last_ym, Iwantspei) {
     d <- as.numeric(d)
     if (sum(is.na(d))/length(d) > thr) {
         rep(NA, length(d))
@@ -362,7 +375,12 @@ calc_SPI = function(d, ts, thr, ref.s=NULL, ref.e=NULL, first_ym, last_ym) {
             ref.e = last_ym
         }
         d = ts(d, frequency=12, start=first_ym)
-        as.vector(fitted(SPEI::spi(d, ts, na.rm=TRUE, ref.start=ref.s, ref.end=ref.e)))
+        if (Iwantspei) {
+            fun = SPEI::spei
+        } else {
+            fun = SPEI::spi
+        }
+        as.vector(fitted(fun(d, ts, na.rm=TRUE, ref.start=ref.s, ref.end=ref.e)))
     }
 }
 # For testing purposes
@@ -386,14 +404,14 @@ if (progress) {
 spi_out <- pbapply(spi_in,
     which(nc_var_in_dims != 'time'),
     calc_SPI, cl = cluster,
-    ts = ts, thr = na_thr, ref.s = ref_start, ref.e = ref_end, first_ym = nc_start, last_ym = nc_end
+    ts = ts, thr = na_thr, ref.s = ref_start, ref.e = ref_end, first_ym = nc_start, last_ym = nc_end, Iwantspei = wantspei
 )
 if (nthreads > 1 ) stopCluster(cluster)
 flog.info("Ended computation")
 
 if (debug) {
     n_over_thr = sum(abs(spi_out) > spi_max_thr, na.rm=TRUE)
-    flog.debug('Setting %d values above the SPI threshold (%g) to NA', n_over_thr, spi_max_thr)
+    flog.debug('Setting %d values above the SPI/SPEI threshold (%g) to NA', n_over_thr, spi_max_thr)
 }
 spi_out[abs(spi_out) > spi_max_thr] = NA
 
@@ -427,7 +445,7 @@ flog.debug("Dimensions to be cloned: {paste(dims2copy, collapse=', ')}" %>% glue
 flog.info('Initialising output file')
 nc_var_out = ncvar_def(
     var_out, '1', nc_in$dim[nc_var_in_dims],
-    longname='SPI index',
+    longname='{index_name} index' %>% glue,
 #     shuffle = compress,
     compression = ifelse(compress, deflate_level, NA)
 )
@@ -456,7 +474,7 @@ for (v in c('global attributes', dims2copy, vars2copy)) {
 
 # Update netCDF history
 nc_h = ncatt_get(nc_in, 0, 'history')
-nc_new_h = '{date()}: SPI index calculated by {program_name} version {version} ({gh_url})' %>% glue
+nc_new_h = '{date()}: {index_name} index calculated by {program_name} version {version} ({gh_url})' %>% glue
 if (nc_h$hasatt) {
     nc_out %>% ncatt_put(0, 'history', paste(nc_new_h, nc_h$value, sep='\n'))
 } else {
@@ -475,17 +493,17 @@ nc_close(nc_in)
 if (nc_coords$hasatt) nc_out %>% ncatt_put(var_out, 'coordinates', nc_coords$value)
 if (nc_grid_mapping$hasatt) nc_out %>% ncatt_put(var_out, 'grid_mapping', nc_grid_mapping$value)
 
-# Fill SPI variable with data and attributes
+# Fill SPI/SPEI variable with data and attributes
 flog.info('Filling output file')
 nc_out %>% ncvar_put(var_out, spi_out)
 nc_out %>% ncatt_put(var_out, 'timescale', paste(ts, 'months'))
 if (!is.null(ref_start)) nc_out %>% ncatt_put(var_out, 'ref_start', paste(ref_start, collapse='-'))
 if (!is.null(ref_end  )) nc_out %>% ncatt_put(var_out, 'ref_end'  , paste(ref_end, collapse='-'))
-nc_out %>% ncatt_put(var_out, 'max_spi', spi_max_thr)
+nc_out %>% ncatt_put(var_out, 'max_thr', spi_max_thr)
 nc_out %>% ncatt_put(var_out, 'na_thr', na_thr)
 nc_out %>% ncatt_put(var_out, 'program', '{program_name} version {version} ({gh_url})' %>% glue)
 nc_out %>% ncatt_put(var_out, 'R_version', p_ver(R) %>% as.character)
-nc_out %>% ncatt_put(var_out, 'SPEI_pkg_version', p_ver(SPEI) %>% as.character)
+nc_out %>% ncatt_put(var_out, 'R_SPEI_pkg_version', p_ver(SPEI) %>% as.character)
 nc_out %>% ncatt_put(var_out, 'ncdf4_pkg_version', p_ver(ncdf4) %>% as.character)
 
 # Close
