@@ -27,7 +27,7 @@ version_pkgs = c( # Set requirements for package versions
 fatalerror = function() stop('fatal error', call.=FALSE)
 if (!'pacman' %in% rownames(installed.packages())) {
     cat('Please first install package pacman from the R command line with:
-        install.packages(pacman)
+        install.packages(\'pacman\')
     pacman will take care of the installation of other necessary packages
     ')
     fatalerror()
