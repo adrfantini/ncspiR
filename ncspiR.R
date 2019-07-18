@@ -78,6 +78,9 @@ option_list = list(make_option(c("-t", "--timescale"),
                                 type="character",
                                 default=NULL,
                                 help="ref.end parameter to pass to SPEI::spi or SPEI::spei, a character in the YEAR-MON format (e.g. 2005-12). [default: %default]"),
+                    make_option("--noreferr",
+                                action="store_true",
+                                help="Do not fail if reference times are outside of the time bounds of the input file"),
                     make_option(c('-l', "--logfile"),
                                 type="character",
                                 default=NULL,
@@ -160,6 +163,13 @@ if (progress) {
     flog.debug('Progress bar will be shown')
 } else {
     flog.debug('Progress bar will not be shown')
+}
+
+noreferr = isTRUE(opt$noreferr)
+if (noreferr) {
+    flog.debug('The program will NOT stop if reference times (--reftime, --refend) are outside of the time bounds of the input file')
+} else {
+    flog.debug('The program will stop if reference times (--reftime, --refend) are outside of the time bounds of the input file')
 }
 
 assume_mon = isTRUE(opt$assume_monthly)
@@ -335,11 +345,25 @@ flog.debug("Last  month in the file: %s", paste(nc_end, collapse='-'))
 # Check reference start and end (again)
 if (!is.null(ref_start)) {
     ref_start_invalid = (nc_start[1] > ref_start[1]) | (nc_start[1] == ref_start[1] & nc_start[2] > ref_start[2])
-    if (ref_start_invalid) flog.fatal('--refstart (%s) antecedent to the first timestep in the file (%s)', paste(ref_start, collapse='-'), paste(nc_start, collapse='-'))
+    if (ref_start_invalid) {
+        if (noreferr) {
+            flog.warn('--refstart (%s) antecedent to the first timestep in the file (%s)', paste(ref_start, collapse='-'), paste(nc_start, collapse='-'))
+            ref_start = nc_start
+        } else {
+            flog.fatal('--refstart (%s) antecedent to the first timestep in the file (%s)', paste(ref_start, collapse='-'), paste(nc_start, collapse='-'))
+        }
+    }
 }
 if (!is.null(ref_end)) {
     ref_end_invalid = (nc_end[1] < ref_end[1]) | (nc_end[1] == ref_end[1] & nc_end[2] < ref_end[2])
-    if (ref_end_invalid) flog.fatal('--refend (%s) successive to the last timestep in the file (%s)', paste(ref_end, collapse='-'), paste(nc_end, collapse='-'))
+    if (ref_end_invalid) {
+        if (noreferr) {
+            flog.warn('--refend (%s) successive to the last timestep in the file (%s)', paste(ref_end, collapse='-'), paste(nc_end, collapse='-'))
+            ref_end = nc_end
+        else {
+            flog.fatal('--refend (%s) successive to the last timestep in the file (%s)', paste(ref_end, collapse='-'), paste(nc_end, collapse='-'))
+        }
+    }
 }
 
 # Function to get dimensions for a given variable
