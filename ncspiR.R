@@ -268,7 +268,7 @@ time_var = 'time'
 times = nc_in %>% ncvar_get(time_var)
 time_units_nc = nc_in %>% ncatt_get(time_var, 'units')
 if (!time_units_nc$hasatt) flog.fatal('Cannot find time units!')
-flog.debug('Time units: %s', time_units$value)
+flog.debug('Time units: %s', time_units_nc$value)
 time_units = strsplit1(time_units_nc$value, " ")
 if ( tolower(time_units[2]) != 'since' ) flog.fatal('Cannot understand time units (%s)', time_units_nc)
 if ( any(grepl('[TZ]', time_units[3:4])) ) {
