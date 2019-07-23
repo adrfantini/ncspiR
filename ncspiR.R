@@ -46,6 +46,10 @@ suppressPackageStartupMessages(p_load(futile.logger))
 flog.fatal = function(...) {futile.logger::flog.fatal(...); fatalerror()}
 # options(error = function() { flog.fatal(geterrmessage()) ; quit(runLast=FALSE)}) # Override R's default error handling
 
+strsplit1 = function(...) strsplit(...)[[1]]
+
+#============= INPUT DEFINITION =============
+
 option_list = list(make_option(c("-t", "--timescale"),
                                 type="integer",
                                 default=12,
@@ -255,8 +259,6 @@ version_pkgs %>% names %>% sapply(function(x) {
     if ( ver < version_pkgs[x] ) flog.fatal('Version %s of package %s required, got %s. Maybe your (probably CRAN) version is behind the github one?', version_pkgs[x], x, as.character(ver))
 }) %>% invisible
 flog.debug("Loaded packages")
-
-strsplit1 = function(...) strsplit(...)[[1]]
 
 #============= READ INPUT DATA =============
 
