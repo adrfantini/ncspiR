@@ -520,6 +520,7 @@ if (nc_h$hasatt) {
 # Fill in cloned variables
 for (v in vars2copy) {
     flog.debug('Copying values for cloned variable %s', v)
+    if (nc_in$var[[v]]$ndims == 0) next
     nc_out %>% ncvar_put(v, nc_in %>% ncvar_get(v))
 }
 flog.debug('Closing input file')
