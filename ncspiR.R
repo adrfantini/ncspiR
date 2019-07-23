@@ -232,12 +232,12 @@ if (is.null(ref_end) != is.null(ref_start)) {
     flog.fatal('--refstart and --refend must either be both present, or both absent')
 }
 if (!is.null(ref_start)) {
-    ref_start = as.numeric(strsplit(ref_start, '-')[[1]])
+    ref_start = as.numeric(strsplit1(ref_start, '-'))
     if (length(ref_start) != 2L || notmonth(ref_start[2])) flog.fatal('Did not understand the reference start value, got %s', paste(ref_start, collapse='-'))
     flog.debug("Reference start: %d-%d", ref_start[1], ref_start[2])
 }
 if (!is.null(ref_end  )) {
-    ref_end   = as.numeric(strsplit(ref_end  , '-')[[1]])
+    ref_end   = as.numeric(strsplit1(ref_end  , '-'))
     if (length(ref_end) != 2L || notmonth(ref_end[2])) flog.fatal('Did not understand the reference end value, got %s', paste(ref_end, collapse='-'))
     flog.debug("Reference end: %d-%d", ref_end[1], ref_end[2])
 
@@ -256,6 +256,8 @@ version_pkgs %>% names %>% sapply(function(x) {
 }) %>% invisible
 flog.debug("Loaded packages")
 
+strsplit1 = function(...) strsplit(...)[[1]]
+
 #============= READ INPUT DATA =============
 
 flog.info("Reading metadata")
@@ -264,10 +266,18 @@ nc_in = nc_open(fn_in)
 # Read time
 time_var = 'time'
 times = nc_in %>% ncvar_get(time_var)
-time_units = nc_in %>% ncatt_get(time_var, 'units')
-if (!time_units$hasatt) flog.fatal('Cannot find time units!')
+time_units_nc = nc_in %>% ncatt_get(time_var, 'units')
+if (!time_units_nc$hasatt) flog.fatal('Cannot find time units!')
 flog.debug('Time units: %s', time_units$value)
-time_units = strsplit(time_units$value, " ")[[1]]
+time_units = strsplit1(time_units_nc$value, " ")
+if ( tolower(time_units[2]) != 'since' ) flog.fatal('Cannot understand time units (%s)', time_units_nc)
+if ( any(grepl('[TZ]', time_units[3:4])) ) {
+    flog.warn('Found T or Z in time units (%s), trying manual parsing', time_units_nc)
+    time_units_tmp = as_datetime(time_units[-c(1:2)])
+    time_units[3] = time_units_tmp %>% format('%Y-%m-%d')
+    time_units[4] = time_units_tmp %>% format('%H:%M:%S')
+    time_units[5] = time_units_tmp %>% tz
+}
 flog.debug('Time unit parsed as:',  data.frame(WHAT = c('unit', 'since', 'date', 'time', 'timezone'), VALUE = c(time_units, rep(NA, 5 - length(time_units)))), capture=TRUE)
 
 time_cal = nc_in %>% ncatt_get(time_var, 'calendar')
@@ -284,7 +294,7 @@ if (time_cal %in% pcict_calendars) {
     # Use PCIct to deal with times
     time_offset_unit <- time_units[1]
     time_tz <- time_units[5]
-    time_start <- strsplit(time_units[4], ":")[[1]]
+    time_start <- strsplit1(time_units[4], ":")
     if (length(time_start) != 3 || time_start[1] > 24 || time_start[2] > 60 || time_start[3] > 60 || any(time_start < 0)) {
         flog.warn("%s is not a valid start time. Assuming 00:00:00", time_start)
         time_units[4] <- "00:00:00"
